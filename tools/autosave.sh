@@ -77,11 +77,11 @@ sync_artifacts() {
   local base_url sas_token host_id prefix relative source target
   local -a paths
 
+  load_config || return 1
   if [[ "${AUTOSAVE_BLOB_ENABLED:-1}" != "1" ]]; then
     log "Azure Blob sync is disabled."
     return 0
   fi
-  load_config || return 1
   if ! command -v azcopy >/dev/null 2>&1; then
     log "azcopy is not installed or not on PATH."
     return 1
