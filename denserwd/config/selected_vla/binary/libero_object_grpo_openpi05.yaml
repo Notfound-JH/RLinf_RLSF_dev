@@ -21,7 +21,7 @@ cluster:
 runner:
   task_type: embodied
   logger:
-    log_path: "data/results"
+    log_path: "../results"
     project_name: rlinf
     experiment_name: "openpi05_libero_object_binary_grpo_2xa100"
     logger_backends: ["tensorboard"] # wandb, swanlab
