@@ -1,0 +1,15 @@
+model:
+  model_type: Qwen3VLReward
+  pretrained_path: /workspace/pretrained_vlas/Qwen3-VL-2B-Instruct
+  goal_prompt: "You are a reward model for robotic manipulation. Given the task instruction and the ordered history of observations, predict the probability that the task has been successfully completed. Return a scalar reward in [0, 1], where 1 means success is very likely and 0 means failure is very likely. The multimodal inputs are ordered as: goal prompt, task prompt, main camera image history, wrist camera image history."
+  torch_dtype: bfloat16
+  device_map: auto
+  freeze_backbone: false
+  context_window: 4
+
+data:
+  obs:
+    modality:
+      rgb: ["wrist_images", "main_images"]
+      depth: []
+      low_dim: ["robot_states"]

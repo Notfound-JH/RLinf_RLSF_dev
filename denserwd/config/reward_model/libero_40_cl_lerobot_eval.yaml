@@ -1,0 +1,53 @@
+# @package _global_
+
+defaults:
+  - data: default
+  - model: default
+  - train: default
+  - test: default
+  - _self_
+
+seed: 10000
+use_wandb: false
+device: "cuda"
+benchmark_name: "LIBERO_40"
+
+model:
+  context_window: 20
+
+train:
+  pipeline: TrainingPipeline
+  n_epochs: 30
+  batch_size: 16
+  target_update_freq: 400
+  curriculum_first: true
+  curriculum_steps: 250
+  enable_td_filter: true
+  target_noise_std: 0.02
+  target_entropy_reg_coef: 0.1
+  entropy_reg_coef: 0.01
+  random_decay: 0.9
+  td_error_threshold: 0.03
+  td_error_max_weight: 5.0
+  resume: false
+  resume_path: null
+
+test:
+  checkpoint_path: null  # path to model checkpoint for testing
+  batch_size: 32
+  add_reverse: true
+  sample_step: 5
+  # for lerobot compatability
+  openpi: 
+    config_name: "pi0_libero"
+    model_path: "/workspace/pretrained_vlas/openpi/torch/pi0_base"
+  data:
+    data_path: "/workspace/public_dataset/"
+    episode_index_path: "/workspace/public_dataset/physical-intelligence/libero/ten_shot.csv"
+    # episode_index_path: "/workspace/public_dataset/physical-intelligence/libero/five_shot.csv"
+
+data:
+  train_dataset_ratio: 1.0
+  eval_dataset_ratio: 1.0
+  test_dataset_ratio: 0.1
+  sample_step: 15

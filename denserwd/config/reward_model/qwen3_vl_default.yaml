@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - data: default
+  - model: qwen3_vl
+  - train: default
+  - test: default
+  - _self_
+
+seed: 10000
+use_wandb: false
+device: "cuda"
+benchmark_name: "LIBERO_SPATIAL"
+
+train:
+  pipeline: TrainingPipeline
+  n_epochs: 10
+  batch_size: 2
+  num_workers: 0
+  target_update_freq: 100
+  curriculum_steps: 10
+  curriculum_first: false
+  enable_td_filter: false
+  target_noise_std: 0.0
+  entropy_reg_coef: 0.001
+  resume: false
+  resume_path: null
+
+test:
+  checkpoint_path: null

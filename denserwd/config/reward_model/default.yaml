@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - data: default
+  - model: default
+  - train: default
+  - test: default
+  - _self_
+
+seed: 10000
+use_wandb: false
+device: "cuda"
+benchmark_name: "LIBERO_SPATIAL"
+
+model:
+  context_window: 50
+
+train:
+  pipeline: TrainingPipeline
+  n_epochs: 30
+  target_update_freq: 500
+  curriculum_steps: 20
+  enable_td_filter: true
+  target_noise_std: 0.02
+  target_entropy_reg_coef: 0.1
+  entropy_reg_coef: 0.01
+  random_decay: 0.67
+  td_error_threshold: 0.03
+  td_error_max_weight: 5.0
+  resume: false
+  resume_path: null
+
+test:
+  checkpoint_path: null  # path to model checkpoint for testing

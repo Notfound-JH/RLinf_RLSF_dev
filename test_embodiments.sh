@@ -1,0 +1,2 @@
+source switch_env openpi
+bash examples/embodiment/run_embodiment.sh libero_10_grpo_openpi

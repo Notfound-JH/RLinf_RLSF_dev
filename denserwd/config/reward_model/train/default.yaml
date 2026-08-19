@@ -1,0 +1,35 @@
+# training
+pipeline: TrainingPipeline
+n_epochs: 20
+start_epoch: 0
+batch_size: 32
+num_workers: 0
+grad_clip: 0.5
+loss_scale: 1.0
+lr: 0.0001
+wd: 0.01
+target_update_freq: 500
+entropy_reg_coef: 0.01
+curriculum_epochs: 1
+curriculum_steps: 50
+
+enable_td_filter: true
+td_error_threshold: 0.03
+td_error_max_weight: 5.0
+curriculum_first: true
+cl_entropy_reg_coef: 0.1
+
+# target reward noise (for data augmentation)
+target_noise_mean: 0.0
+target_noise_std: 0.0
+target_entropy_reg_coef: 0.1
+tau: 0.1
+
+
+# resume training
+resume: false
+resume_path: null
+debug: false
+
+eval_every: 2
+save_every: 1

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /mnt/storage/users/jhwang_data/RLinf-RLSF/eval_pi0_libero10_baseline.sh)"
+    ]
+  }
+}

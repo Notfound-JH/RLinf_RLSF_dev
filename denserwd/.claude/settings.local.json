@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://api.github.com/repos/huggingface/transformers/issues/17681\")",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s \"https://api.github.com/repos/pytorch/pytorch/issues/124017\")"
+    ]
+  }
+}

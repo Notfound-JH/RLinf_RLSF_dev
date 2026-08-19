@@ -1,0 +1,35 @@
+model:
+  model_type: OctoReward
+  # octo_model: octo-small
+  # octo_pretrained_path: /workspace/pretrained_vlas/octo/octo-small/
+  octo_model: octo-base
+  octo_pretrained_path: /workspace/pretrained_vlas/octo/octo-base/
+
+  action_dim: 7
+  context_window: 10
+  extra_num_layers: 0
+  extra_hidden_size: null
+  max_ep_len: 200
+  # token_embedding_dim: 384  # for octo-small
+  token_embedding_dim: 768  # for octo-base
+
+  language_model: t5-base
+  finetune_language: false
+  finetune_vision: false
+
+  transformer_kwargs:
+    attention_dropout_rate: 0.0
+    add_position_embedding: false
+    num_layers: 12
+    # mlp_dim: 1536  # for octo-small
+    # num_attention_heads: 6  # for octo-small
+    mlp_dim: 3072  # for octo-base
+    num_attention_heads: 12 # for octo-base
+    dropout_rate: 0.0
+
+data:
+  obs:
+    modality:
+      rgb: ["wrist_images", "main_images"]
+      depth: []
+      low_dim: ["robot_states"]
