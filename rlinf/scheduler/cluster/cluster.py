@@ -256,7 +256,9 @@ class Cluster:
         )
 
         try:
-            runtime_env = {"env_vars": Manager.get_runtime_env_vars()}
+            runtime_env_vars = Manager.get_runtime_env_vars()
+            runtime_env_vars["RLINF_NAMESPACE"] = Cluster.NAMESPACE
+            runtime_env = {"env_vars": runtime_env_vars}
             self._worker_manager = (
                 ray.remote(WorkerManager)
                 .options(name=WorkerManager.MANAGER_NAME, runtime_env=runtime_env)
