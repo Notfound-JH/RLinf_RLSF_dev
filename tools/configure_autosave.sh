@@ -33,6 +33,7 @@ umask 077
   printf 'AUTOSAVE_BLOB_ENABLED=%q\n' "1"
   printf 'AUTOSAVE_INTERVAL_SECONDS=%q\n' "300"
   printf 'AUTOSAVE_PATHS=%q\n' "logs:results:data/models:models_ckpts:checkpoints"
+  printf 'AUTOSAVE_EXTERNAL_RESULTS_DIR=%q\n' "/home/aiscuser/work/results"
 } >"${CONFIG_FILE}"
 chmod 600 "${CONFIG_FILE}"
 unset SAS_URL QUERY
