@@ -32,10 +32,10 @@ from denserwd.envs.env_worker import EnvWorkerRM
 
 
 mp.set_start_method("spawn", force=True)
-os.environ["EMBODIED_PATH"] = "/workspace/RLinf/denserwd"
+os.environ["EMBODIED_PATH"] = os.path.dirname(os.path.abspath(__file__))
 
 SAVE_DATA_DIR = './data'
-CONFIG_DIR = "./config/vla"
+CONFIG_DIR = os.environ.get("RLINF_CONFIG_DIR", "./config/vla")
 
 
 def main(args) -> None:
