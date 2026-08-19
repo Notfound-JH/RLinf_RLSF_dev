@@ -21,6 +21,7 @@ umask 077
 {
   printf 'AZURE_BLOB_SAS_URL=%q\n' "${SAS_URL}"
   printf 'AZURE_BLOB_PREFIX=%q\n' "rlinf-rlsf"
+  printf 'AUTOSAVE_BLOB_ENABLED=%q\n' "1"
   printf 'AUTOSAVE_INTERVAL_SECONDS=%q\n' "300"
   printf 'AUTOSAVE_PATHS=%q\n' "logs:results:denserwd/data/models:models_ckpts:checkpoints"
 } >"${CONFIG_FILE}"
