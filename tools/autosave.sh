@@ -75,7 +75,7 @@ save_code() {
 }
 
 sync_artifacts() {
-  local base_url sas_token host_id prefix relative source target experiment checkpoint signature signature_file
+  local base_url sas_token host_id prefix relative source target experiment checkpoint checkpoint_dir signature signature_file
   local -a paths
 
   load_config || return 1
@@ -131,27 +131,28 @@ sync_artifacts() {
   mkdir -p "${STATE_DIR}/checkpoint-signatures"
   for experiment in "${source}"/*; do
     [[ -d "${experiment}/checkpoints" ]] || continue
-    checkpoint=$(find "${experiment}/checkpoints" -mindepth 1 -maxdepth 1 -type d \
-      -name 'global_step_*' -printf '%f\n' | sort -V | tail -n 1)
-    [[ -n "${checkpoint}" ]] || continue
-    source=${experiment}/checkpoints/${checkpoint}
-    signature=$(find "${source}" -type f -printf '%P\t%s\t%T@\n' | sort | sha256sum | cut -d' ' -f1)
-    signature_file=${STATE_DIR}/checkpoint-signatures/$(basename "${experiment}").sha256
-    if [[ -f "${signature_file}" ]] && [[ "$(cat "${signature_file}")" == "${checkpoint} ${signature}" ]]; then
-      continue
-    fi
+    while IFS= read -r checkpoint; do
+      [[ -n "${checkpoint}" ]] || continue
+      checkpoint_dir=${experiment}/checkpoints/${checkpoint}
+      signature=$(find "${checkpoint_dir}" -type f -printf '%P\t%s\t%T@\n' | sort | sha256sum | cut -d' ' -f1)
+      signature_file=${STATE_DIR}/checkpoint-signatures/$(basename "${experiment}")--${checkpoint}.sha256
+      if [[ -f "${signature_file}" ]] && [[ "$(cat "${signature_file}")" == "${signature}" ]]; then
+        continue
+      fi
 
-    target="${base_url%/}/${prefix}/${host_id}/training-results/$(basename "${experiment}")/checkpoints/${checkpoint}?${sas_token}"
-    if azcopy sync "${source}" "${target}" \
-      --recursive=true \
-      --delete-destination=false \
-      --output-level=essential; then
-      printf '%s %s\n' "${checkpoint}" "${signature}" >"${signature_file}"
-      log "Synced latest checkpoint: $(basename "${experiment}")/${checkpoint}."
-    else
-      log "Azure Blob sync failed for $(basename "${experiment}")/${checkpoint}."
-      return 1
-    fi
+      target="${base_url%/}/${prefix}/${host_id}/training-results/$(basename "${experiment}")/checkpoints/${checkpoint}?${sas_token}"
+      if azcopy sync "${checkpoint_dir}" "${target}" \
+        --recursive=true \
+        --delete-destination=false \
+        --output-level=essential; then
+        printf '%s\n' "${signature}" >"${signature_file}"
+        log "Synced checkpoint: $(basename "${experiment}")/${checkpoint}."
+      else
+        log "Azure Blob sync failed for $(basename "${experiment}")/${checkpoint}."
+        return 1
+      fi
+    done < <(find "${experiment}/checkpoints" -mindepth 1 -maxdepth 1 -type d \
+      -name 'global_step_*' -printf '%f\n' | sort -V)
   done
 }
 
