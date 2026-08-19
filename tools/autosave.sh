@@ -8,6 +8,7 @@ STATE_DIR=${XDG_STATE_HOME:-${HOME}/.local/state}/rlinf-autosave
 LOG_FILE=${STATE_DIR}/autosave.log
 SESSION_NAME=${RLINF_AUTOSAVE_SESSION:-rlinf_autosave}
 MAX_GIT_FILE_BYTES=${MAX_GIT_FILE_BYTES:-90000000}
+EXPECTED_CONTAINER_URL=https://cloudaigcrdataeus.blob.core.windows.net/tunnel-data-code-eus
 export PATH="${HOME}/.local/bin:${PATH}"
 
 timestamp() {
@@ -89,9 +90,17 @@ sync_artifacts() {
 
   base_url=${AZURE_BLOB_SAS_URL%%\?*}
   sas_token=${AZURE_BLOB_SAS_URL#*\?}
-  prefix=${AZURE_BLOB_PREFIX:-rlinf-rlsf}
+  prefix=${AZURE_BLOB_PREFIX:-jinghe/rlinf-rlsf}
+  if [[ "${base_url%/}" != "${EXPECTED_CONTAINER_URL}" ]]; then
+    log "Refusing to sync outside ${EXPECTED_CONTAINER_URL}."
+    return 1
+  fi
+  if [[ "${prefix}" != "jinghe" && "${prefix}" != jinghe/* ]]; then
+    log "Refusing to sync outside the jinghe prefix."
+    return 1
+  fi
   host_id=$(hostname -s | tr -cd 'A-Za-z0-9._-')
-  IFS=':' read -r -a paths <<<"${AUTOSAVE_PATHS:-logs:results:denserwd/data/models:models_ckpts:checkpoints}"
+  IFS=':' read -r -a paths <<<"${AUTOSAVE_PATHS:-logs:results:data/models:models_ckpts:checkpoints}"
 
   for relative in "${paths[@]}"; do
     if [[ -z "${relative}" || "${relative}" == /* || "${relative}" == *..* ]]; then
