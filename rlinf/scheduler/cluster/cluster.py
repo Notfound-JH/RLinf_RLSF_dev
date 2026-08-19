@@ -77,7 +77,7 @@ class Cluster:
     """A singleton class that manages the cluster resources for Ray workers."""
 
     SYS_NAME = "RLinf"
-    NAMESPACE = SYS_NAME
+    NAMESPACE = os.getenv("RLINF_NAMESPACE", SYS_NAME)
     LOGGING_LEVEL = os.getenv(
         f"{SYS_NAME.upper()}_{ClusterEnvVar.LOG_LEVEL.value}", "INFO"
     ).upper()

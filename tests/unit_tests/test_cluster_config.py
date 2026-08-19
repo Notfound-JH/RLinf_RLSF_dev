@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -466,6 +467,24 @@ def _reset_cluster_singleton():
             instance._has_initialized = False
         delattr(Cluster, "_instance")
     Cluster.NAMESPACE = Cluster.SYS_NAME
+
+
+def test_cluster_namespace_can_be_set_from_environment():
+    env = os.environ.copy()
+    env["RLINF_NAMESPACE"] = "RLinf_libero_object"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from rlinf.scheduler import Cluster; print(Cluster.NAMESPACE)",
+        ],
+        check=True,
+        capture_output=True,
+        env=env,
+        text=True,
+    )
+
+    assert result.stdout.strip() == "RLinf_libero_object"
 
 
 def test_cluster_env_configs_applied_in_worker_launch():
