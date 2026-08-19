@@ -32,7 +32,10 @@ from denserwd.envs.env_worker import EnvWorkerRM
 
 
 mp.set_start_method("spawn", force=True)
-os.environ["EMBODIED_PATH"] = os.path.dirname(os.path.abspath(__file__))
+REPO_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.environ["EMBODIED_PATH"] = os.environ.get(
+    "RLINF_DEFAULT_CONFIG_ROOT", os.path.join(REPO_PATH, "examples", "embodiment")
+)
 
 SAVE_DATA_DIR = './data'
 CONFIG_DIR = os.environ.get("RLINF_CONFIG_DIR", "./config/vla")
