@@ -41,7 +41,7 @@ algorithm:
   kl_penalty: kl  # how to estimate kl divergence: kl or kl_penalty
   group_size: 8
   reward_coef: 1.0
-  rollout_epoch: 8
+  rollout_epoch: 4
   eval_rollout_epoch: 1 # set eval_rollout_epoch > 0 when enable runner.only_eval or runner.val_check_interval > 0
 
   reward_type: chunk_level
@@ -89,7 +89,7 @@ env:
 
   # Override the default values in env/libero_object
   train:
-    total_num_envs: 16
+    total_num_envs: 32
     auto_reset: False
     ignore_terminations: False
     max_episode_steps: 240
