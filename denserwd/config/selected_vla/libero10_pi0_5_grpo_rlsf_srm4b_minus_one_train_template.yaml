@@ -1,0 +1,228 @@
+# REVIEW TEMPLATE ONLY. Do not launch before the configuration is approved.
+#
+# Reward semantics implemented by RLinf_SRM_MINUS_ONE:
+#   - non-terminal/failure chunk: every action receives p_success - 1
+#   - first-success terminal chunk: clamp env success to 1, then 1 - 1 = 0
+#   - rows after success_once: 0, with no further SRM history write
+#   - no division by num_action_chunks; chunk_level reward is 10 * (p_success - 1)
+#
+# Runtime split:
+#   policy/actor/rollout/env -> RLSF_DRIVER_PYTHON
+#   Qwen3-VL-4B SRM         -> RLSF_REWARD_PYTHON
+
+defaults:
+  - env/libero_10@env.train
+  - env/libero_10@env.eval
+  - model/pi0_5@actor.model
+  - hybrid_engines/fsdp@actor.fsdp_config
+  - weight_syncer/patch_syncer@weight_syncer
+  - override hydra/job_logging: stdout
+  - _self_
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+  searchpath:
+    - file://${oc.env:EMBODIED_PATH}/config/
+
+cluster:
+  num_nodes: 1
+  component_placement:
+    actor:
+      node_group: policy_runtime
+      placement: 0-0
+    env:
+      node_group: policy_runtime
+      placement: 0-0
+    rollout:
+      node_group: policy_runtime
+      placement: 1-1
+    reward:
+      node_group: reward_runtime
+      placement: 2-2
+  node_groups:
+    - label: policy_runtime
+      node_ranks: 0-0
+      env_configs:
+        - node_ranks: 0-0
+          python_interpreter_path: ${oc.env:RLSF_DRIVER_PYTHON}
+    - label: reward_runtime
+      node_ranks: 0-0
+      env_configs:
+        - node_ranks: 0-0
+          python_interpreter_path: ${oc.env:RLSF_REWARD_PYTHON}
+
+runner:
+  task_type: embodied
+  logger:
+    log_path: /mnt/storage2/users/hfwang_data/vla_project/reference_md_OPT/srm_minus_one/4b/models/review_runs
+    project_name: rlinf
+    experiment_name: REVIEW_srm4b_minus_one_seed42
+    logger_backends: [tensorboard]
+  max_epochs: 50  # wuduo: don't change
+  max_steps: -1  # wuduo: don't change
+  only_eval: false
+  val_check_interval: -1
+  save_interval: 5
+  resume_dir: null
+  ckpt_path: null
+
+algorithm:
+  normalize_advantages: true  # wuduo: don't change
+  kl_penalty: kl  # wuduo: don't change
+  group_size: 8  # wuduo: don't change
+  reward_coef: 1.0  # wuduo: don't change
+  reward_type: chunk_level  # wuduo: don't change
+  logprob_type: chunk_level  # wuduo: don't change
+  entropy_type: token_level  # wuduo: don't change
+  update_epoch: 2  # wuduo: don't change
+  adv_type: grpo_rtg  # wuduo: don't change
+  loss_type: actor  # wuduo: don't change
+  loss_agg_func: token-mean  # wuduo: don't change
+  kl_beta: 0.0  # wuduo: don't change
+  entropy_bonus: 0.0  # wuduo: don't change
+  clip_ratio_high: 0.2  # wuduo: don't change
+  clip_ratio_low: 0.2  # wuduo: don't change
+  clip_ratio_c: 3.0  # wuduo: don't change
+  value_clip: 0.2  # wuduo: don't change
+  huber_delta: 10.0  # wuduo: don't change
+  gamma: 0.99  # wuduo: don't change
+  gae_lambda: 0.95  # wuduo: don't change
+  filter_rewards: false
+  rewards_lower_bound: 0.1
+  rewards_upper_bound: 0.9
+  sampling_params:  # wuduo: don't change
+    do_sample: true
+    temperature_train: 1.0
+    temperature_eval: 0.6
+    top_k: 50
+    top_p: 1.0
+    repetition_penalty: 1.0
+    add_BOS: false
+  length_params:  # wuduo: don't change
+    max_new_token: null
+    max_length: 1024
+    min_length: 1
+
+env:
+  group_name: EnvGroup
+  train:
+    # The source training template omitted this field. It is explicit here because
+    # current RLinf stores rollout_epoch under env.train rather than algorithm.
+    rollout_epoch: 8  # wuduo: don't change
+    total_num_envs: 16  # wuduo: don't change
+    auto_reset: false
+    ignore_terminations: false
+    max_episode_steps: 480  # wuduo: don't change
+    max_steps_per_rollout_epoch: 480  # wuduo: don't change
+    reward_coef: ${algorithm.reward_coef}
+    group_size: ${algorithm.group_size}
+    seed: 42
+    use_fixed_reset_state_ids: true
+    use_ordered_reset_state_ids: false
+    video_cfg:
+      save_video: false
+  eval:
+    # Dormant while val_check_interval=-1; standalone ID500 evaluation is separate.
+    rollout_epoch: 1
+    total_num_envs: 1  # wuduo: don't change in the source training template
+    auto_reset: true
+    ignore_terminations: true
+    max_episode_steps: 480  # wuduo: don't change
+    max_steps_per_rollout_epoch: 480  # wuduo: don't change
+    group_size: 1  # wuduo: don't change
+    seed: 42
+    use_fixed_reset_state_ids: true
+    use_ordered_reset_state_ids: false
+    is_eval: true
+    video_cfg:
+      save_video: false
+      video_base_dir: ${runner.logger.log_path}/video/eval
+
+rollout:
+  group_name: RolloutGroup
+  generation_backend: huggingface
+  recompute_logprobs: false
+  unnorm_key: libero_10
+  enable_offload: false
+  pipeline_stage_num: 1  # wuduo: don't change
+  model:
+    model_path: /mnt/storage/public_data/models/RLinf-Pi05-LIBERO-SFT
+    precision: ${actor.model.precision}
+    num_steps: 5  # wuduo: don't change
+
+actor:
+  group_name: ActorGroup
+  training_backend: fsdp
+  micro_batch_size: 4  # wuduo: don't change
+  # REVIEW: 16 envs * 1 rollout epoch * (480 / 10) = 768 chunk samples.
+  # With global_batch_size=64 and update_epoch=1, one macro update performs
+  # 768 / 64 = 12 optimizer (Adam) steps in the current runner.
+  global_batch_size: 64  # wuduo: don't change
+  seed: 42  # wuduo: don't change
+  enable_offload: false
+  model:
+    model_path: /mnt/storage/public_data/models/RLinf-Pi05-LIBERO-SFT
+    num_action_chunks: 10
+    num_steps: 5  # wuduo: don't change
+    precision: null  # pi0.5/OpenPI requirement
+    is_lora: false  # wuduo: don't change
+    openpi:
+      train_expert_only: true  # wuduo: don't change
+
+  optim:  # wuduo: don't change
+    lr: 2.0e-6
+    value_lr: 1.0e-4
+    adam_beta1: 0.9
+    adam_beta2: 0.95
+    adam_eps: 1.0e-08
+    clip_grad: 1.0
+    weight_decay: 0.01
+  fsdp_config:
+    strategy: fsdp
+    sharding_strategy: no_shard
+    gradient_checkpointing: false
+    use_orig_params: false
+    mixed_precision:
+      param_dtype: ${actor.model.precision}
+      reduce_dtype: ${actor.model.precision}
+      buffer_dtype: ${actor.model.precision}
+
+reward:
+  use_reward_model: true
+  group_name: RewardGroup
+  reward_mode: history_buffer
+  reward_output_transform: probability_minus_one
+  reward_delta_clip: null
+  terminal_success_anchor: true
+  history_reward_assign: false
+  reward_weight: 1.0
+  env_reward_weight: 0.0
+  model:
+    model_type: srm_qwenvl
+    checkpoint_path: /mnt/storage2/users/hfwang_data/vla_project/outputs/SRM_training/models/qwenvl4b_libero_v5_octoalign_srpo_aligned_raw01_noleak/best_model.pth
+    legacy_repo_path: /mnt/storage2/users/hfwang_data/vla_project/RLinf-RLSF
+    model_path: /mnt/storage/models/Qwen3-VL-4B-Instruct
+    precision: bf16
+    device_map: current_device
+    infer_micro_batch_size: 1
+    interval_reward: 0.0
+    reward_reduce: mean
+    history_source: raw_action_frames
+    context_window: 4
+    history_buffer_name: srm_context
+    history_buffers:
+      srm_context:
+        history_size: 4
+        min_history_size: 1
+        input_interval: 1
+        input_on_done: true
+        history_keys:
+          - main_images
+          - wrist_images
+          - states
+          - task_descriptions
+
+critic:
+  use_critic_model: false
