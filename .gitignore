@@ -13,6 +13,14 @@ docs/build
 dist
 logs/*
 outputs/*
+results/
+checkpoints/
+models_ckpts/
+artifacts/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
 *.so
 .venv
 .docs-venv
