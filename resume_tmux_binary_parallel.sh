@@ -143,7 +143,13 @@ printf 'launch_id=%s\nray_address=127.0.0.1:%s\nmodel_dir=%s\ncheckpoint_root=%s
 
 "${VENV_DIR}/bin/ray" stop --force >/dev/null 2>&1 || true
 CUDA_VISIBLE_DEVICES="${GPUS}" \
+  PATH="${VENV_DIR}/bin:${PATH}" \
+  PYTHONPATH="${REPO_DIR}:${PYTHONPATH:-}" \
   RAY_memory_usage_threshold="${RAY_MEMORY_USAGE_THRESHOLD}" \
+  RLINF_PI05_MODEL_PATH="${MODEL_DIR}" \
+  ROBOT_PLATFORM="LIBERO" \
+  MUJOCO_GL="egl" \
+  PYOPENGL_PLATFORM="egl" \
   "${VENV_DIR}/bin/ray" start --head \
     --port="${RAY_PORT}" \
     --num-cpus="${RAY_NUM_CPUS}" \
