@@ -12,6 +12,7 @@ MODEL_DIR=${RLINF_PI05_MODEL_PATH:-${HOME}/models/RLinf-Pi05-LIBERO-SFT}
 VENV_DIR=${VENV_DIR:-${REPO_DIR}/.venv}
 CHECKPOINT_ROOT=${CHECKPOINT_ROOT:-/scratch/rlinf-checkpoints}
 RESUME_STEP=${RESUME_STEP:-30}
+OUTPUT_ROOT=${OUTPUT_ROOT:-${REPO_DIR}/results}
 DRY_RUN=${DRY_RUN:-0}
 TMUX_PREFIX=${TMUX_PREFIX:-rlinf_binary_resume}
 KEEPALIVE_SESSION=${KEEPALIVE_SESSION:-gpu_keepalive_0_7}
@@ -122,6 +123,7 @@ for index in "${!CONFIGS[@]}"; do
     "${VENV_DIR}/bin/python" train_embodied_agent_hcrm.py \
       --config-name "${config}" \
       --resume-dir "${resume_dir}" \
+      --log-path "${OUTPUT_ROOT}" \
       --validate-only
   popd >/dev/null
 done
@@ -137,8 +139,8 @@ if pgrep -f '[t]rain_embodied_agent_hcrm.py' >/dev/null; then
 fi
 
 mkdir -p "${LAUNCH_LOG_DIR}"
-printf 'launch_id=%s\nray_address=127.0.0.1:%s\nmodel_dir=%s\ncheckpoint_root=%s\n' \
-  "${LAUNCH_ID}" "${RAY_PORT}" "${MODEL_DIR}" "${CHECKPOINT_ROOT}" \
+printf 'launch_id=%s\nray_address=127.0.0.1:%s\nmodel_dir=%s\ncheckpoint_root=%s\noutput_root=%s\n' \
+  "${LAUNCH_ID}" "${RAY_PORT}" "${MODEL_DIR}" "${CHECKPOINT_ROOT}" "${OUTPUT_ROOT}" \
   >"${LAUNCH_LOG_DIR}/manifest.txt"
 
 "${VENV_DIR}/bin/ray" stop --force >/dev/null 2>&1 || true
@@ -181,7 +183,7 @@ for index in "${!CONFIGS[@]}"; do
     >>"${LAUNCH_LOG_DIR}/manifest.txt"
 
   tmux new-session -d -s "${session}" \
-    "set -o pipefail; cd \"${REPO_DIR}\" && source \"${VENV_DIR}/bin/activate\" && export CUDA_VISIBLE_DEVICES=\"${GPUS}\" RAY_ADDRESS=\"127.0.0.1:${RAY_PORT}\" RAY_memory_usage_threshold=\"${RAY_MEMORY_USAGE_THRESHOLD}\" RLINF_NAMESPACE=\"${namespace}\" RLINF_PI05_MODEL_PATH=\"${MODEL_DIR}\" RLINF_CONFIG_DIR=\"./config/selected_vla/binary\" RLINF_RESUME_DIR=\"${resume_dir}\" PYTHONPATH=\"${REPO_DIR}:\${PYTHONPATH:-}\" MUJOCO_GL=egl PYOPENGL_PLATFORM=egl && cd \"${REPO_DIR}/denserwd\" && bash run_embodiment_hcrm.sh \"${config}\" 2>&1 | tee -a \"${log_file}\""
+    "set -o pipefail; cd \"${REPO_DIR}\" && source \"${VENV_DIR}/bin/activate\" && export CUDA_VISIBLE_DEVICES=\"${GPUS}\" RAY_ADDRESS=\"127.0.0.1:${RAY_PORT}\" RAY_memory_usage_threshold=\"${RAY_MEMORY_USAGE_THRESHOLD}\" RLINF_NAMESPACE=\"${namespace}\" RLINF_PI05_MODEL_PATH=\"${MODEL_DIR}\" RLINF_CONFIG_DIR=\"./config/selected_vla/binary\" RLINF_RESUME_DIR=\"${resume_dir}\" RLINF_LOG_PATH=\"${OUTPUT_ROOT}\" PYTHONPATH=\"${REPO_DIR}:\${PYTHONPATH:-}\" MUJOCO_GL=egl PYOPENGL_PLATFORM=egl && cd \"${REPO_DIR}/denserwd\" && bash run_embodiment_hcrm.sh \"${config}\" 2>&1 | tee -a \"${log_file}\""
   started_sessions+=("${session}")
 done
 

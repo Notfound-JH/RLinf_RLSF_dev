@@ -45,6 +45,8 @@ def main(args) -> None:
     overrides = []
     if args.resume_dir is not None:
         overrides.append(f"runner.resume_dir={args.resume_dir}")
+    if args.log_path is not None:
+        overrides.append(f"runner.logger.log_path={args.log_path}")
     cfg = compose(config_name=args.config_name, overrides=overrides)
     cfg = validate_cfg(cfg)
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -54,6 +56,7 @@ def main(args) -> None:
                 {
                     "config_name": args.config_name,
                     "resume_dir": cfg_dict["runner"].get("resume_dir"),
+                    "log_path": cfg_dict["runner"]["logger"]["log_path"],
                     "experiment_name": cfg_dict["runner"]["logger"]["experiment_name"],
                     "component_placement": cfg_dict["cluster"]["component_placement"],
                 },
@@ -149,6 +152,7 @@ if __name__ == "__main__":
         default="maniskill_ppo_openvlaoft_quickstart",
     )
     parser.add_argument("--resume-dir", type=str, default=None)
+    parser.add_argument("--log-path", type=str, default=None)
     parser.add_argument("--validate-only", action="store_true")
     # parser.add_argument("--cuda-list", type=str, help="Cuda device list", default="6")
     args = parser.parse_args()

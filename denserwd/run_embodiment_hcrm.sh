@@ -43,6 +43,9 @@ CMD=(python "${SRC_FILE}" --config-name "${CONFIG_NAME}")
 if [[ -n "${RLINF_RESUME_DIR:-}" ]]; then
     CMD+=(--resume-dir "${RLINF_RESUME_DIR}")
 fi
+if [[ -n "${RLINF_LOG_PATH:-}" ]]; then
+    CMD+=(--log-path "${RLINF_LOG_PATH}")
+fi
 if [[ "${RLINF_VALIDATE_ONLY:-0}" == "1" ]]; then
     CMD+=(--validate-only)
 fi

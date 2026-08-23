@@ -126,8 +126,8 @@ sync_artifacts() {
     fi
   done
 
-  source=${AUTOSAVE_EXTERNAL_RESULTS_DIR:-/home/aiscuser/work/results}
-  if [[ "${source}" != "/home/aiscuser/work/results" ]]; then
+  source=${AUTOSAVE_EXTERNAL_RESULTS_DIR:-/home/aiscuser/works/results}
+  if [[ "${source}" != "/home/aiscuser/works/results" ]]; then
     log "Refusing unexpected external results path: ${source}"
     return 1
   fi
