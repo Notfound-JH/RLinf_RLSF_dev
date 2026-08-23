@@ -76,7 +76,7 @@ save_code() {
 
 sync_artifacts() {
   local base_url sas_token host_id prefix relative source target experiment checkpoint checkpoint_dir signature signature_file
-  local -a paths
+  local -a paths sync_args
 
   load_config || return 1
   if [[ "${AUTOSAVE_BLOB_ENABLED:-1}" != "1" ]]; then
@@ -110,10 +110,15 @@ sync_artifacts() {
     source=${REPO_DIR}/${relative}
     [[ -d "${source}" ]] || continue
     target="${base_url%/}/${prefix}/${host_id}/${relative}?${sas_token}"
-    if azcopy sync "${source}" "${target}" \
-      --recursive=true \
-      --delete-destination=false \
-      --output-level=essential; then
+    sync_args=(
+      --recursive=true
+      --delete-destination=false
+      --output-level=essential
+    )
+    if [[ "${relative}" == "data/models" ]]; then
+      sync_args+=(--exclude-pattern=run_embodiment.log)
+    fi
+    if azcopy sync "${source}" "${target}" "${sync_args[@]}"; then
       log "Synced ${relative} to Azure Blob."
     else
       log "Azure Blob sync failed for ${relative}."
