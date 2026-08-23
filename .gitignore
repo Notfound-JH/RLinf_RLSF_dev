@@ -27,6 +27,6 @@ artifacts/
 uv.lock
 rlinf/envs/maniskill/assets
 PKG-INFO
-data
-model
+/data/
+/model/
 .dockerignore

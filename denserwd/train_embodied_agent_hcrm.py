@@ -14,22 +14,21 @@
 
 
 import argparse
-import os
 import json
+import os
 
 import torch.multiprocessing as mp
 from hydra import compose, initialize
 from omegaconf.omegaconf import OmegaConf
 
+# from denserwd.models import OctoReward
+from denserwd.envs.env_worker import EnvWorkerRM
 from rlinf.config import validate_cfg
 from rlinf.runners.embodied_runner import EmbodiedRunner
 from rlinf.scheduler import Cluster
 from rlinf.utils.placement import HybridComponentPlacement
-from rlinf.workers.rollout.hf.huggingface_worker import MultiStepRolloutWorker
 from rlinf.workers.env.env_worker import EnvWorker
-# from denserwd.models import OctoReward
-from denserwd.envs.env_worker import EnvWorkerRM
-
+from rlinf.workers.rollout.hf.huggingface_worker import MultiStepRolloutWorker
 
 mp.set_start_method("spawn", force=True)
 REPO_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,22 +36,38 @@ os.environ["EMBODIED_PATH"] = os.environ.get(
     "RLINF_DEFAULT_CONFIG_ROOT", os.path.join(REPO_PATH, "examples", "embodiment")
 )
 
-SAVE_DATA_DIR = './data'
+SAVE_DATA_DIR = "./data"
 CONFIG_DIR = os.environ.get("RLINF_CONFIG_DIR", "./config/vla")
 
 
 def main(args) -> None:
     initialize(config_path=CONFIG_DIR)
-    cfg = compose(config_name=args.config_name)
+    overrides = []
+    if args.resume_dir is not None:
+        overrides.append(f"runner.resume_dir={args.resume_dir}")
+    cfg = compose(config_name=args.config_name, overrides=overrides)
     cfg = validate_cfg(cfg)
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    if args.validate_only:
+        print(
+            json.dumps(
+                {
+                    "config_name": args.config_name,
+                    "resume_dir": cfg_dict["runner"].get("resume_dir"),
+                    "experiment_name": cfg_dict["runner"]["logger"]["experiment_name"],
+                    "component_placement": cfg_dict["cluster"]["component_placement"],
+                },
+                indent=2,
+            )
+        )
+        return
     print(json.dumps(cfg_dict, indent=2))
 
     cluster = Cluster(cluster_cfg=cfg.cluster)
     component_placement = HybridComponentPlacement(cfg, cluster)
 
     # for reward model
-    if hasattr(cfg, "reward_model") and cfg.reward_model.use_reward_model == True:
+    if hasattr(cfg, "reward_model") and cfg.reward_model.use_reward_model:
         use_reward_model = True
     else:
         use_reward_model = False
@@ -70,8 +85,10 @@ def main(args) -> None:
             "device": reward_model_device,
             "context_window": reward_model_cfg.model.context_window,
         }
-        cfg_dict["env"]["train"]["use_reward_model"] = True  # only for training envs, only save in cfg_dict
-        cfg_dict["env"]["train"]["reward_model_info"] = reward_model_info  
+        cfg_dict["env"]["train"]["use_reward_model"] = (
+            True  # only for training envs, only save in cfg_dict
+        )
+        cfg_dict["env"]["train"]["reward_model_info"] = reward_model_info
 
     # Create actor worker group
     actor_placement = component_placement.get_strategy("actor")
@@ -96,7 +113,7 @@ def main(args) -> None:
     # Create env worker group
     env_placement = component_placement.get_strategy("env")
     if use_reward_model:
-        env_group = EnvWorkerHCRM.create_group(cfg, cfg_dict).launch(
+        env_group = EnvWorkerRM.create_group(cfg, cfg_dict).launch(
             cluster, name=cfg.env.group_name, placement_strategy=env_placement
         )
     else:
@@ -122,9 +139,18 @@ def main(args) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Training reward model on LIBERO Benchmark")
-    parser.add_argument("--config-name", type=str, help="Configuration file name", default="maniskill_ppo_openvlaoft_quickstart")  
-    # parser.add_argument("--cuda-list", type=str, help="Cuda device list", default="6")  
+    parser = argparse.ArgumentParser(
+        description="Training reward model on LIBERO Benchmark"
+    )
+    parser.add_argument(
+        "--config-name",
+        type=str,
+        help="Configuration file name",
+        default="maniskill_ppo_openvlaoft_quickstart",
+    )
+    parser.add_argument("--resume-dir", type=str, default=None)
+    parser.add_argument("--validate-only", action="store_true")
+    # parser.add_argument("--cuda-list", type=str, help="Cuda device list", default="6")
     args = parser.parse_args()
     # args.config_name = "libero_spatial_collect_openpi"
     # os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_list

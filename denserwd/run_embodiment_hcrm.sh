@@ -39,6 +39,13 @@ echo "Using Python at $(which python)"
 LOG_DIR="${REPO_PATH}/data/models/$(date +'%Y%m%d-%H:%M:%S')-${CONFIG_NAME}" #/$(date +'%Y%m%d-%H:%M:%S')"
 MEGA_LOG_FILE="${LOG_DIR}/run_embodiment.log"
 mkdir -p "${LOG_DIR}"
-CMD="python ${SRC_FILE}  --config-name ${CONFIG_NAME}"
-echo ${CMD} > ${MEGA_LOG_FILE}
-${CMD} 2>&1 | tee -a ${MEGA_LOG_FILE}
+CMD=(python "${SRC_FILE}" --config-name "${CONFIG_NAME}")
+if [[ -n "${RLINF_RESUME_DIR:-}" ]]; then
+    CMD+=(--resume-dir "${RLINF_RESUME_DIR}")
+fi
+if [[ "${RLINF_VALIDATE_ONLY:-0}" == "1" ]]; then
+    CMD+=(--validate-only)
+fi
+printf '%q ' "${CMD[@]}" > "${MEGA_LOG_FILE}"
+printf '\n' >> "${MEGA_LOG_FILE}"
+"${CMD[@]}" 2>&1 | tee -a "${MEGA_LOG_FILE}"
