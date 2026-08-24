@@ -15,18 +15,20 @@ hydra:
 cluster:
   num_nodes: 1
   component_placement:
-    actor: 2
-    env,rollout: 3
+    # actor: "0-7"
+    # env: "0-3"
+    # rollout: "4-7"
+    actor, env, rollout: all
 
 runner:
   task_type: embodied
   logger:
     log_path: "../results"
     project_name: rlinf
-    experiment_name: "openpi05_libero_10_binary_grpo_2xa100"
+    experiment_name: "openpi05_libero_10_binary_grpo_8xa100_256env_gbs128_gs25"
     logger_backends: ["tensorboard"] # wandb, swanlab
 
-  max_epochs: 50
+  max_epochs: 25
   max_steps: -1
 
   only_eval: False
@@ -41,7 +43,7 @@ algorithm:
   kl_penalty: kl  # how to estimate kl divergence: kl or kl_penalty
   group_size: 8
   reward_coef: 1.0
-  rollout_epoch: 2
+  rollout_epoch: 1
   eval_rollout_epoch: 1 # set eval_rollout_epoch > 0 when enable runner.only_eval or runner.val_check_interval > 0
 
   reward_type: chunk_level
@@ -89,11 +91,11 @@ env:
 
   # Override the default values in env/libero_10
   train:
-    total_num_envs: 64
+    total_num_envs: 256
     auto_reset: False
     ignore_terminations: False
-    max_episode_steps: 240
-    max_steps_per_rollout_epoch: 240
+    max_episode_steps: 480
+    max_steps_per_rollout_epoch: 480
     use_rel_reward: True
     reward_coef: ${algorithm.reward_coef}
     group_size: ${algorithm.group_size}
@@ -120,7 +122,7 @@ rollout:
   generation_backend: "huggingface"
   recompute_logprobs: False
   enable_offload: False
-  pipeline_stage_num: 1
+  pipeline_stage_num: 2
 
   model:
     model_path: ${oc.env:RLINF_PI05_MODEL_PATH,/mnt/storage/public_data/models/RLinf-Pi05-LIBERO-SFT}
@@ -130,8 +132,8 @@ rollout:
 actor:
   group_name: "ActorGroup"
   training_backend: "fsdp"
-  micro_batch_size: 64
-  global_batch_size: 64
+  micro_batch_size: 8
+  global_batch_size: 128
   seed: 42
   enable_offload: False
 
