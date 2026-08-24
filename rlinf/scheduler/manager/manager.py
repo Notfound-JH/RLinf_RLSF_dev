@@ -89,7 +89,15 @@ class Manager:
     MANAGER_NAME = ""
     proxy: ManagerProxy = None
     PID = None
-    ENV_LIST = ["RAY_ADDRESS"]
+    ENV_LIST = [
+        "RAY_ADDRESS",
+        "PYTHONPATH",
+        "LD_LIBRARY_PATH",
+        "MUJOCO_GL",
+        "PYOPENGL_PLATFORM",
+        "ROBOT_PLATFORM",
+        "RLINF_PI05_MODEL_PATH",
+    ]
 
     @classmethod
     def get_proxy(cls: type[ManagerClsType], no_wait: bool = False) -> ManagerClsType:

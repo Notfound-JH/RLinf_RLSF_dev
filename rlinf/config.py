@@ -80,6 +80,7 @@ def get_supported_model(model_type: str) -> SupportedModel:
 SUPPORTED_ROLLOUT_BACKENDS = ["sglang", "vllm"]
 SUPPORTED_TASK_TYPE = [
     "embodied",
+    "embodied_eval",
     "reasoning",
     "reasoning_eval",
     "coding_online_rl",
@@ -939,6 +940,8 @@ def validate_cfg(cfg: DictConfig) -> DictConfig:
         cfg = validate_coding_online_rl_cfg(cfg)
     elif cfg.runner.task_type == "reasoning_eval":
         cfg = validate_reasoning_eval_cfg(cfg)
+        return cfg
+    elif cfg.runner.task_type == "embodied_eval":
         return cfg
 
     if cfg.algorithm.adv_type in ("grpo", "reinpp_baseline"):
