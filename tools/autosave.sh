@@ -162,7 +162,9 @@ sync_artifacts() {
 }
 
 run_once() {
-  save_code || true
+  if [[ "${AUTOSAVE_CODE_ENABLED:-1}" == "1" ]]; then
+    save_code || true
+  fi
   sync_artifacts || true
 }
 
@@ -179,13 +181,16 @@ run_daemon() {
 }
 
 start_daemon() {
+  local code_enabled=${1:-1}
+
   load_config || return 1
   if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
     log "Autosave is already running in tmux session ${SESSION_NAME}."
     return 0
   fi
   mkdir -p "${STATE_DIR}"
-  tmux new-session -d -s "${SESSION_NAME}" "exec bash '${REPO_DIR}/tools/autosave.sh' daemon"
+  tmux new-session -d -s "${SESSION_NAME}" \
+    "exec env AUTOSAVE_CODE_ENABLED='${code_enabled}' bash '${REPO_DIR}/tools/autosave.sh' daemon"
   log "Autosave started in tmux session ${SESSION_NAME}."
   log "Status: bash tools/autosave.sh status"
 }
@@ -206,14 +211,15 @@ case "${1:-}" in
   logs) sync_artifacts ;;
   once) run_once ;;
   daemon) run_daemon ;;
-  start) start_daemon ;;
+  start) start_daemon 1 ;;
+  start-logs) start_daemon 0 ;;
   status) show_status ;;
   stop)
     tmux kill-session -t "${SESSION_NAME}" 2>/dev/null || true
     log "Autosave stopped."
     ;;
   *)
-    echo "Usage: $0 {start|status|stop|once|code|logs}" >&2
+    echo "Usage: $0 {start|start-logs|status|stop|once|code|logs}" >&2
     exit 2
     ;;
 esac

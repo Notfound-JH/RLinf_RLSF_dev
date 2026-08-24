@@ -25,10 +25,10 @@ runner:
   logger:
     log_path: "../results"
     project_name: rlinf
-    experiment_name: "openpi05_libero_10_binary_grpo_8xa100_256env_gbs128_gs25"
+    experiment_name: "openpi05_libero_10_binary_grpo_8xa100_128env_gbs128_mbs16_gs50"
     logger_backends: ["tensorboard"] # wandb, swanlab
 
-  max_epochs: 25
+  max_epochs: 50
   max_steps: -1
 
   only_eval: False
@@ -91,7 +91,7 @@ env:
 
   # Override the default values in env/libero_10
   train:
-    total_num_envs: 256
+    total_num_envs: 128
     auto_reset: False
     ignore_terminations: False
     max_episode_steps: 480
@@ -132,7 +132,7 @@ rollout:
 actor:
   group_name: "ActorGroup"
   training_backend: "fsdp"
-  micro_batch_size: 8
+  micro_batch_size: 16
   global_batch_size: 128
   seed: 42
   enable_offload: False
