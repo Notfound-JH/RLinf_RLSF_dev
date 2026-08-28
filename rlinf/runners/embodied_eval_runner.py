@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
 import typing
+
+import numpy as np
 
 from rlinf.scheduler import Channel
 from rlinf.scheduler import WorkerGroupFuncResult as Handle
@@ -76,5 +80,54 @@ class EmbodiedEvalRunner:
         eval_metrics = {f"eval/{k}": v for k, v in eval_metrics.items()}
         self.logger.info(eval_metrics)
         self.metric_logger.log(step=0, data=eval_metrics)
+
+        report_dir = os.path.join(
+            self.cfg.runner.logger.log_path,
+            self.cfg.runner.logger.experiment_name,
+        )
+        os.makedirs(report_dir, exist_ok=True)
+        report_path = os.path.join(report_dir, "eval_report.json")
+        serializable_metrics = {
+            key: value.item()
+            if isinstance(value, (np.generic, np.ndarray))
+            else value
+            for key, value in eval_metrics.items()
+        }
+        report = {
+            "overall_success_rate": serializable_metrics.get("eval/success_rate"),
+            "num_trajectories": serializable_metrics.get("eval/num_trajectories"),
+            "per_task": {},
+            "metrics": serializable_metrics,
+        }
+        task_suite = None
+        try:
+            from rlinf.envs.libero.utils import get_benchmark_overridden
+
+            suite_name = self.cfg.env.eval.get("task_suite_name")
+            if suite_name:
+                task_suite = get_benchmark_overridden(suite_name)()
+        except (ImportError, KeyError, TypeError, ValueError):
+            self.logger.warning("Could not load LIBERO task names for the report.")
+
+        task_prefix = "eval/task_"
+        task_suffix = "_success_rate"
+        for key, success_rate in serializable_metrics.items():
+            if not (key.startswith(task_prefix) and key.endswith(task_suffix)):
+                continue
+            task_id = int(key[len(task_prefix) : -len(task_suffix)])
+            task_name = f"task_{task_id}"
+            if task_suite is not None:
+                task_name = task_suite.get_task(task_id).language
+            report["per_task"][str(task_id)] = {
+                "task_name": task_name,
+                "success_rate": success_rate,
+                "num_trajectories": serializable_metrics.get(
+                    f"eval/task_{task_id}_num_trajectories"
+                ),
+            }
+        with open(report_path, "w", encoding="utf-8") as report_file:
+            json.dump(report, report_file, indent=2, sort_keys=True)
+            report_file.write("\n")
+        self.logger.info(f"Saved evaluation report to {report_path}.")
 
         self.metric_logger.finish()

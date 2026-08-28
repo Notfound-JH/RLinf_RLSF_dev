@@ -101,6 +101,17 @@ def compute_evaluate_metrics(eval_metrics_list):
     if "success_once" in raw_metrics:
         all_eval_metrics["success_rate"] = raw_metrics["success_once"].mean().numpy()
 
+        if "task_id" in raw_metrics:
+            task_ids = raw_metrics["task_id"].long()
+            for task_id in torch.unique(task_ids, sorted=True).tolist():
+                task_mask = task_ids == task_id
+                all_eval_metrics[f"task_{task_id}_success_rate"] = (
+                    raw_metrics["success_once"][task_mask].mean().numpy()
+                )
+                all_eval_metrics[f"task_{task_id}_num_trajectories"] = int(
+                    task_mask.sum().item()
+                )
+
     if "episode_len" in raw_metrics:
         all_eval_metrics["avg_episode_len"] = raw_metrics["episode_len"].mean().numpy()
 
