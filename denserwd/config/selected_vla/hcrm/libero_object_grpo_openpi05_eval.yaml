@@ -16,16 +16,16 @@ hydra:
 cluster:
   num_nodes: 1
   component_placement:
-    actor: 0-1
-    env: 0-1
-    rollout: 0-1
+    actor: 2-3
+    env: 2-3
+    rollout: 2-3
 
 runner:
   task_type: embodied_eval
   logger:
     log_path: data/results
     project_name: rlinf
-    experiment_name: openpi05_libero_object_binary_gs50_fixed500
+    experiment_name: openpi05_libero_object_hcrm_gs50_fixed500
     logger_backends: [tensorboard]
   max_epochs: 1
   max_steps: -1
@@ -34,7 +34,7 @@ runner:
   save_interval: -1
   eval_rng_seed: 42
   resume_dir: null
-  ckpt_path: /scratch/rlinf-checkpoints/openpi05_libero_object_binary_grpo_2xa100/checkpoints/global_step_50/actor/model_state_dict/full_weights.pt
+  ckpt_path: /home/aiscuser/results/openpi05_libero_object_hcrm_grpo_2xa100_64env_gbs128_mbs16/checkpoints/global_step_50/actor/model_state_dict/full_weights.pt
 
 algorithm:
   rollout_epoch: 1

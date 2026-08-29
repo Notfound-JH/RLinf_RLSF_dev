@@ -1,30 +1,28 @@
 #!/bin/bash
-# Evaluate four binary-GRPO global_step_50 checkpoints in parallel.
-# GPU pairs: Object 0-1, LIBERO-10 2-3, Goal 4-5, Spatial 6-7.
+# Evaluate the three completed HCRM global_step_50 checkpoints in parallel.
+# GPU pairs: Object 2-3, Goal 4-5, Spatial 6-7. LIBERO-10 keeps training on 0-1.
 
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${VENV_DIR:-${REPO_DIR}/.venv}"
 MODEL_DIR="${RLINF_PI05_MODEL_PATH:-${HOME}/models/RLinf-Pi05-LIBERO-SFT}"
-CONFIG_DIR="${REPO_DIR}/denserwd/config/selected_vla/binary"
+CONFIG_DIR="${REPO_DIR}/denserwd/config/selected_vla/hcrm"
 VENV_LIB_DIR="${VENV_DIR}/sysroot/usr/lib/x86_64-linux-gnu"
 SYSTEM_LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
-RAY_PORT="${RAY_PORT:-29502}"
-RAY_NUM_CPUS="${RAY_NUM_CPUS:-96}"
+RAY_PORT="${RAY_PORT:-29500}"
 RAY_MEMORY_USAGE_THRESHOLD="${RAY_MEMORY_USAGE_THRESHOLD:-0.99}"
-TMUX_PREFIX="${TMUX_PREFIX:-rlinf_eval_binary_gs50}"
+TMUX_PREFIX="${TMUX_PREFIX:-rlinf_eval_hcrm_gs50}"
 LAUNCH_ID="$(date +'%Y%m%d_%H%M%S')"
-LOG_DIR="${REPO_DIR}/results/binary_gs50_fixed500_parallel/${LAUNCH_ID}"
+LOG_DIR="${REPO_DIR}/results/hcrm_gs50_fixed500_parallel/${LAUNCH_ID}"
 
 CONFIGS=(
   libero_object_grpo_openpi05_eval
-  libero_10_grpo_openpi05_eval
   libero_goal_grpo_openpi05_eval
   libero_spatial_grpo_openpi05_eval
 )
-SUITES=(object libero10 goal spatial)
-GPU_PAIRS=(0-1 2-3 4-5 6-7)
+SUITES=(object goal spatial)
+GPU_PAIRS=(2-3 4-5 6-7)
 
 if [[ ! -x "${VENV_DIR}/bin/python" || ! -x "${VENV_DIR}/bin/ray" ]]; then
   echo "ERROR: incomplete virtual environment: ${VENV_DIR}" >&2
@@ -47,24 +45,13 @@ mkdir -p "${LOG_DIR}"
 printf 'launch_id=%s\nray_address=127.0.0.1:%s\nmodel_dir=%s\n' \
   "${LAUNCH_ID}" "${RAY_PORT}" "${MODEL_DIR}" >"${LOG_DIR}/manifest.txt"
 
-# Replace the earlier single-suite run before resetting its Ray cluster.
+# Replace earlier evaluation sessions without disturbing the running training.
 tmux kill-session -t rlinf_eval_object_gs50 2>/dev/null || true
 for suite in "${SUITES[@]}"; do
   tmux kill-session -t "${TMUX_PREFIX}_${suite}" 2>/dev/null || true
 done
 
-"${VENV_DIR}/bin/ray" stop --force >/dev/null 2>&1 || true
-rm -rf /tmp/ray/* 2>/dev/null || true
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
-  PYTHONPATH="${REPO_DIR}" \
-  LD_LIBRARY_PATH="${VENV_LIB_DIR}:${SYSTEM_LD_LIBRARY_PATH}" \
-  RAY_memory_usage_threshold="${RAY_MEMORY_USAGE_THRESHOLD}" \
-  "${VENV_DIR}/bin/ray" start --head \
-    --port="${RAY_PORT}" \
-    --num-cpus="${RAY_NUM_CPUS}" \
-    --num-gpus=8 \
-    --disable-usage-stats \
-    --include-dashboard=false >/dev/null
+RAY_ADDRESS="127.0.0.1:${RAY_PORT}" "${VENV_DIR}/bin/ray" status >/dev/null
 
 started_sessions=()
 cleanup_failed_launch() {
@@ -72,7 +59,6 @@ cleanup_failed_launch() {
   for session in "${started_sessions[@]}"; do
     tmux kill-session -t "${session}" 2>/dev/null || true
   done
-  "${VENV_DIR}/bin/ray" stop --force >/dev/null 2>&1 || true
 }
 trap cleanup_failed_launch ERR
 
@@ -98,7 +84,7 @@ for session in "${started_sessions[@]}"; do
 done
 trap - ERR
 
-echo "Started four fixed500 evaluations:"
+echo "Started three HCRM fixed500 evaluations:"
 for index in "${!CONFIGS[@]}"; do
   echo "  ${TMUX_PREFIX}_${SUITES[$index]} -> GPUs ${GPU_PAIRS[$index]}"
 done
