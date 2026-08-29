@@ -23,14 +23,14 @@ runner:
   logger:
     log_path: "../results"
     project_name: rlinf
-    experiment_name: "openpi05_libero_spatial_hcrm_grpo_2xa100_128env_gbs128_mbs16"
+    experiment_name: "openpi05_libero_spatial_hcrm_grpo_2xa100_64env_gbs128_mbs16"
     logger_backends: ["tensorboard"] # wandb, swanlab
 
   max_epochs: 50
   max_steps: -1
 
   only_eval: False
-  val_check_interval: 10
+  val_check_interval: -1
   save_interval: 5
 
   resume_dir: null # Optional: path to a saved checkpoint directory, such as 'checkpoints/global_step_10'. If not None, it will be used to resume training.
@@ -41,7 +41,7 @@ algorithm:
   kl_penalty: kl  # how to estimate kl divergence: kl or kl_penalty
   group_size: 8
   reward_coef: 1.0
-  rollout_epoch: 1
+  rollout_epoch: 2
   eval_rollout_epoch: 5 # 100 parallel envs x 5 rounds = 500 evaluation trajectories
 
   reward_type: chunk_level
@@ -89,20 +89,22 @@ env:
 
   # Override the default values in env/libero_spatial
   train:
-    total_num_envs: 128
+    env_type: libero_hcrm
+    total_num_envs: 64
     auto_reset: False
     ignore_terminations: False
     max_episode_steps: 240
     max_steps_per_rollout_epoch: 240
     use_rel_reward: True
-    reward_coef: ${algorithm.reward_coef}
-    group_size: ${algorithm.group_size}
+    reward_coef: 1.0
+    group_size: 8
     seed: 42
     use_fixed_reset_state_ids: True
     use_ordered_reset_state_ids: False
     video_cfg:
       save_video: False
   eval:
+    env_type: libero_hcrm
     total_num_envs: 100
     auto_reset: True
     ignore_terminations: True

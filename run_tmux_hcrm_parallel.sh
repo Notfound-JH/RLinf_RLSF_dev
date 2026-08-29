@@ -101,7 +101,7 @@ CUDA_VISIBLE_DEVICES="${GPUS}" \
     --num-cpus="${RAY_NUM_CPUS}" \
     --num-gpus=8 \
     --disable-usage-stats \
-    --include-dashboard=false >/dev/null
+    --include-dashboard=true >/dev/null
 
 started_sessions=()
 cleanup_failed_launch() {
